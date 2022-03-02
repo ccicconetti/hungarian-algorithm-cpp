@@ -16,6 +16,7 @@
 #include <cmath>  // for fabs()
 #include <cstdlib>
 #include <stdexcept>
+#include <string>
 
 #include "hungarian-algorithm-cpp/Hungarian.h"
 
@@ -26,10 +27,22 @@ namespace hungarian {
 //********************************************************//
 // A single function wrapper for solving assignment problem.
 //********************************************************//
-double HungarianAlgorithm::Solve(vector<vector<double>>& DistMatrix,
-                                 vector<int>&            Assignment) {
+double HungarianAlgorithm::Solve(const vector<vector<double>>& DistMatrix,
+                                 vector<int>&                  Assignment) {
+  if (DistMatrix.empty()) {
+    throw std::runtime_error("Empty cost matrix");
+  }
+
   const unsigned int nRows = DistMatrix.size();
   const unsigned int nCols = DistMatrix[0].size();
+
+  for (const auto& elem : DistMatrix) {
+    if (elem.size() != nCols) {
+      throw std::runtime_error("Invalid cost matrix: expected " +
+                               std::to_string(nCols) + " columns, found " +
+                               std::to_string((elem.size())));
+    }
+  }
 
   // Fill in the distMatrixIn. Mind the index is "i + nRows * j".
   // Here the cost matrix of size MxN is defined as a double precision array of

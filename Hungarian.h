@@ -22,8 +22,19 @@ namespace hungarian {
 class HungarianAlgorithm final
 {
  public:
-  static double Solve(std::vector<std::vector<double>>& DistMatrix,
-                      std::vector<int>&                 Assignment);
+  using DistMatrix = std::vector<std::vector<double>>;
+
+  /**
+   * @brief Solve the assignment problem with the Hungarian algorithm.
+   *
+   * @param DistMatrix The input cost matrix, i.e., the cost to execute a given
+   * task on each worker.
+   * @param Assignment The assignment found. A value of -1 is used for tasks not
+   * assigned to workers. The vector is resized to match the number of tasks.
+   * @return double The assignment cost.
+   */
+  static double Solve(const DistMatrix& DistMatrix,
+                      std::vector<int>& Assignment);
 
  private:
   static void assignmentoptimal(int*    assignment,
