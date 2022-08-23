@@ -1,4 +1,4 @@
-add_library(hungarian SHARED
+add_library(hungarian STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/Hungarian.cpp
 )
 
