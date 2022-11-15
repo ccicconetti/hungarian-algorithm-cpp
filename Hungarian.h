@@ -14,11 +14,20 @@
 
 #pragma once
 
+#include <functional>
 #include <iostream>
 #include <vector>
 
+
 namespace hungarian {
 
+/**
+ * @brief Solve the assignment problem with the Hungarian algorithm.
+ *
+ * A couple of comparison algorithms are provided:
+ * - random: assign at random
+ * - greedy: assign each task to the worker with the smallest cost
+ */
 class HungarianAlgorithm final
 {
  public:
@@ -35,6 +44,13 @@ class HungarianAlgorithm final
    */
   static double Solve(const DistMatrix& DistMatrix,
                       std::vector<int>& Assignment);
+
+  static double SolveRandom(const DistMatrix&              DistMatrix,
+                            std::vector<int>&              Assignment,
+                            const std::function<double()>& aRnd);
+
+  static double SolveGreedy(const DistMatrix& DistMatrix,
+                            std::vector<int>& Assignment);
 
  private:
   static void assignmentoptimal(int*    assignment,

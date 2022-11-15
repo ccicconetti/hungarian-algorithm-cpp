@@ -63,6 +63,19 @@ double HungarianAlgorithm::Solve(const vector<vector<double>>& DistMatrix,
   return cost;
 }
 
+double HungarianAlgorithm::SolveRandom(
+    [[maybe_unused]] const DistMatrix&              DistMatrix,
+    [[maybe_unused]] std::vector<int>&              Assignment,
+    [[maybe_unused]] const std::function<double()>& aRnd) {
+  return 0;
+}
+
+double
+HungarianAlgorithm::SolveGreedy([[maybe_unused]] const DistMatrix& DistMatrix,
+                                [[maybe_unused]] std::vector<int>& Assignment) {
+  return 0;
+}
+
 //********************************************************//
 // Solve optimal solution for assignment problem using Munkres algorithm, also
 // known as Hungarian Algorithm.
