@@ -18,15 +18,10 @@
 #include <iostream>
 #include <vector>
 
-
 namespace hungarian {
 
 /**
  * @brief Solve the assignment problem with the Hungarian algorithm.
- *
- * A couple of comparison algorithms are provided:
- * - random: assign at random
- * - greedy: assign each task to the worker with the smallest cost
  */
 class HungarianAlgorithm final
 {
@@ -45,14 +40,44 @@ class HungarianAlgorithm final
   static double Solve(const DistMatrix& DistMatrix,
                       std::vector<int>& Assignment);
 
+  /**
+   * @brief Assign each task to the worker with the smallest cost.
+   *
+   * @param DistMatrix The input cost matrix, i.e., the cost to execute a given
+   * task on each worker.
+   * @param Assignment The assignment found. A value of -1 is used for tasks not
+   * assigned to workers. The vector is resized to match the number of tasks.
+   * @param Rnd A function that returns a random value.
+   * @return double The assignment cost.
+   */
   static double SolveRandom(const DistMatrix&              DistMatrix,
                             std::vector<int>&              Assignment,
                             const std::function<double()>& aRnd);
 
+  /**
+   * @brief Assigning tasks to workers at random.
+   *
+   * @param DistMatrix The input cost matrix, i.e., the cost to execute a given
+   * task on each worker.
+   * @param Assignment The assignment found. A value of -1 is used for tasks not
+   * assigned to workers. The vector is resized to match the number of tasks.
+   * @return double The assignment cost.
+   */
   static double SolveGreedy(const DistMatrix& DistMatrix,
                             std::vector<int>& Assignment);
 
  private:
+  /**
+   * @brief Check if the input cost matrix is valid and return the size.
+   *
+   * @param DistMatrix The input cost matrix.
+   * @return the number of rows and number of columns of the input matrix.
+   *
+   * @throw std::runtime_error if the input is not valid
+   */
+  static std::pair<unsigned int, unsigned int>
+  checkInput(const DistMatrix& DistMatrix);
+
   static void assignmentoptimal(int*    assignment,
                                 double* cost,
                                 double* distMatrix,

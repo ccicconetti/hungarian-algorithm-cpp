@@ -12,9 +12,12 @@
 // minor changes by C. Cicconetti, 2022
 //
 
+#include <algorithm>
+#include <cassert>
 #include <cfloat> // for DBL_MAX
 #include <cmath>  // for fabs()
 #include <cstdlib>
+#include <map>
 #include <stdexcept>
 #include <string>
 
@@ -29,6 +32,95 @@ namespace hungarian {
 //********************************************************//
 double HungarianAlgorithm::Solve(const vector<vector<double>>& DistMatrix,
                                  vector<int>&                  Assignment) {
+  unsigned int nRows, nCols;
+  std::tie(nRows, nCols) = checkInput(DistMatrix);
+
+  // Fill in the distMatrixIn. Mind the index is "i + nRows * j".
+  // Here the cost matrix of size MxN is defined as a double precision array
+  // of N*M elements. In the solving functions matrices are seen to be saved
+  // MATLAB-internally in row-order. (i.e. the matrix [1 2; 3 4] will be
+  // stored as a vector [1 3 2 4], NOT [1 2 3 4]).
+  std::vector<double> distMatrixIn(nRows * nCols);
+  for (unsigned int i = 0; i < nRows; i++)
+    for (unsigned int j = 0; j < nCols; j++)
+      distMatrixIn[i + nRows * j] = DistMatrix[i][j];
+
+  // call solving function
+  Assignment.resize(nRows);
+  double cost = 0.0;
+  assignmentoptimal(
+      Assignment.data(), &cost, distMatrixIn.data(), nRows, nCols);
+
+  return cost;
+}
+
+double HungarianAlgorithm::SolveRandom(const DistMatrix& DistMatrix,
+                                       std::vector<int>& Assignment,
+                                       const std::function<double()>& Rnd) {
+  unsigned int nRows, nCols;
+  std::tie(nRows, nCols) = checkInput(DistMatrix);
+
+  // sort the tasks in random order
+  std::multimap<double, size_t> tasks;
+  for (unsigned int i = 0; i < nRows; i++) {
+    tasks.emplace(Rnd(), i);
+  }
+
+  // sort the workers in random order
+  std::multimap<double, unsigned int> workers;
+  for (unsigned int j = 0; j < nCols; j++) {
+    workers.emplace(Rnd(), j);
+  }
+
+  // assign the tasks to workers
+  double cost = 0;
+  auto   it   = workers.begin();
+  Assignment.resize(nRows);
+  for (const auto& elem : tasks) {
+    const auto task = elem.second;
+    if (it == workers.end()) {
+      Assignment[task] = -1;
+    } else {
+      Assignment[task] = it->second;
+      cost += DistMatrix[task][it->second];
+      it = workers.erase(it);
+    }
+  }
+
+  return cost;
+}
+
+double HungarianAlgorithm::SolveGreedy(const DistMatrix& DistMatrix,
+                                       std::vector<int>& Assignment) {
+  unsigned int nRows, nCols;
+  std::tie(nRows, nCols) = checkInput(DistMatrix);
+  Assignment.resize(nRows);
+
+  // copy the input cost matrix
+  auto costMatrix = DistMatrix;
+
+  // assign each task to the worker with the smallest cost
+  double cost = 0;
+  for (unsigned int i = 0; i < nRows; i++) {
+    auto it = std::min_element(costMatrix[i].begin(), costMatrix[i].end());
+    assert(it != costMatrix[i].end());
+    if (*it == DBL_MAX) {
+      Assignment[i] = -1;
+    } else {
+      const auto worker = it - costMatrix[i].begin();
+      Assignment[i]     = worker;
+      cost += *it;
+      for (unsigned int k = (i + 1); k < nRows; k++) {
+        costMatrix[k][worker] = DBL_MAX;
+      }
+    }
+  }
+
+  return cost;
+}
+
+std::pair<unsigned int, unsigned int>
+HungarianAlgorithm::checkInput(const DistMatrix& DistMatrix) {
   if (DistMatrix.empty()) {
     throw std::runtime_error("Empty cost matrix");
   }
@@ -44,36 +136,7 @@ double HungarianAlgorithm::Solve(const vector<vector<double>>& DistMatrix,
     }
   }
 
-  // Fill in the distMatrixIn. Mind the index is "i + nRows * j".
-  // Here the cost matrix of size MxN is defined as a double precision array of
-  // N*M elements. In the solving functions matrices are seen to be saved
-  // MATLAB-internally in row-order. (i.e. the matrix [1 2; 3 4] will be stored
-  // as a vector [1 3 2 4], NOT [1 2 3 4]).
-  std::vector<double> distMatrixIn(nRows * nCols);
-  for (unsigned int i = 0; i < nRows; i++)
-    for (unsigned int j = 0; j < nCols; j++)
-      distMatrixIn[i + nRows * j] = DistMatrix[i][j];
-
-  // call solving function
-  Assignment.resize(nRows);
-  double cost = 0.0;
-  assignmentoptimal(
-      Assignment.data(), &cost, distMatrixIn.data(), nRows, nCols);
-
-  return cost;
-}
-
-double HungarianAlgorithm::SolveRandom(
-    [[maybe_unused]] const DistMatrix&              DistMatrix,
-    [[maybe_unused]] std::vector<int>&              Assignment,
-    [[maybe_unused]] const std::function<double()>& aRnd) {
-  return 0;
-}
-
-double
-HungarianAlgorithm::SolveGreedy([[maybe_unused]] const DistMatrix& DistMatrix,
-                                [[maybe_unused]] std::vector<int>& Assignment) {
-  return 0;
+  return {nRows, nCols};
 }
 
 //********************************************************//
